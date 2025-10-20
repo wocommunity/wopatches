@@ -8,6 +8,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.FileSystem;
+import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -157,10 +158,18 @@ public class NSBundle {
 		}
 		final URI uri = uriForBundlePath(bundlePath);
 		try {
-			return "jar".equals(uri.getScheme()) ? FileSystems.newFileSystem(uri, Collections.emptyMap())
+			return "jar".equals(uri.getScheme()) ? jarFileSystemForUri(uri)
 					: FileSystems.getDefault();
 		} catch (final IOException e) {
 			throw NSForwardException._runtimeExceptionForThrowable(e);
+		}
+	}
+
+	private static FileSystem jarFileSystemForUri(final URI uri) throws IOException {
+		try {
+			return FileSystems.getFileSystem(uri);
+		} catch (final FileSystemNotFoundException e) {
+			return FileSystems.newFileSystem(uri, Collections.emptyMap());
 		}
 	}
 
