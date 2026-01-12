@@ -681,12 +681,12 @@ public class WOApplication
 		}
 		if (wasMainInvoked()) {
 			_runLoopDate = NSTimestamp.DistantFuture;
-			_launchServices._openInitialURL();
+			_openInitialURL();
 			NSNotificationCenter.defaultCenter().postNotification("ApplicationDidFinishLaunchingNotification", this);
 			NSLog.debug.appendln("Waiting for requests...");
 		} else {
 			_runLoopDate = NSTimestamp.DistantPast;
-			_launchServices._openInitialURL();
+			_openInitialURL();
 			_terminating = true;
 		}
 		do {
