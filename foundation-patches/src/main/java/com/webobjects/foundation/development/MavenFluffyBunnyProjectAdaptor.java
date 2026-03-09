@@ -59,8 +59,13 @@ public class MavenFluffyBunnyProjectAdaptor implements NSBundleAdaptorProvider {
 
 	@Override
 	public boolean isAdaptable(final FileSystem fs, final String bundlePath) {
-		return locateAdaptorBundlePath(fs, bundlePath).map(fs::getPath).map(p -> p.resolve("Resources/Info.plist"))
+		boolean isAdaptable = locateAdaptorBundlePath(fs, bundlePath).map(fs::getPath).map(p -> p.resolve("Resources/Info.plist"))
 				.map(Files::exists).orElse(false);
+		if(isAdaptable) {
+			// Turn on development mode. This is a development bundle.
+			System.setProperty("er.extensions.ERXApplication.developmentMode", "true");
+		}
+		return isAdaptable;
 	}
 
 	private Optional<String> locateAdaptorBundlePath(final FileSystem fs, final String bundlePath) {

@@ -67,7 +67,12 @@ public class CFBundleAdaptor implements NSBundleAdaptorProvider {
 	public boolean isAdaptable(final FileSystem fs, final String bundlePath) {
 //		final Path infoPath = relativePath.resolve("Contents/Info.plist");
 //		return Files.exists(infoPath) && Files.isReadable(infoPath);
-		return rootForBundlePath(fs, bundlePath) != null;
+		boolean isAdaptable = rootForBundlePath(fs, bundlePath) != null;
+		if(isAdaptable) {
+			// Turn on development mode. This is a build bundle.
+			System.setProperty("er.extensions.ERXApplication.developmentMode", "true");
+		}
+		return isAdaptable;
 	}
 
 	@Override
