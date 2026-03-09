@@ -70,7 +70,7 @@ public class CFBundleAdaptor implements NSBundleAdaptorProvider {
 		boolean isAdaptable = rootForBundlePath(fs, bundlePath) != null;
 		if(isAdaptable) {
 			// Turn on development mode. This is a build bundle.
-			System.setProperty("er.extensions.ERXApplication.developmentMode", "true");
+			System.setProperty("NSProjectBundleEnabled", "true");
 		}
 		return isAdaptable;
 	}

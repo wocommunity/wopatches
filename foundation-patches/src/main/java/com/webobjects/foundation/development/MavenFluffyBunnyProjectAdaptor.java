@@ -63,7 +63,7 @@ public class MavenFluffyBunnyProjectAdaptor implements NSBundleAdaptorProvider {
 				.map(Files::exists).orElse(false);
 		if(isAdaptable) {
 			// Turn on development mode. This is a development bundle.
-			System.setProperty("er.extensions.ERXApplication.developmentMode", "true");
+			System.setProperty("NSProjectBundleEnabled", "true");
 		}
 		return isAdaptable;
 	}
