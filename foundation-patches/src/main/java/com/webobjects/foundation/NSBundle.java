@@ -21,6 +21,7 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -52,25 +53,15 @@ public class NSBundle {
 	private static NSBundle mainBundle;
 
 	static {
-		// read NSBundles from jars
+		// read NSBundles from classloader
 		try {
 			final Enumeration<URL> e1 = NSBundle.class.getClassLoader().getResources(LEGACY_SEARCH_PATH);
 			final Enumeration<URL> e2 = NSBundle.class.getClassLoader().getResources(JIGSAW_SEARCH_PATH);
 			final Stream<URL> stream = Stream.concat(Collections.list(e1).stream(), Collections.list(e2).stream());
 			stream.distinct().forEach(NSBundle::loadBundleWithUrl);
-
-//			// read bundles from classpath
-//			final String classPath = System.getProperty("java.class.path");
-//			final List<String> paths = Arrays.asList(classPath.split(File.pathSeparator));
-//			Optional.ofNullable(NSProperties.getProperty("com.webobjects.classpath"))
-//					.map(wcp -> Arrays.asList(wcp.split(File.pathSeparator))).ifPresent(wcp -> paths.addAll(wcp));
-//			// skip any jar bundles which are already loaded and check everything else
-//			final List<String> remainingPaths = paths.stream().filter(p -> !BUNDLES_BY_PATH.containsKey(p)).distinct()
-//					.collect(Collectors.toList());
-//			remainingPaths.forEach(NSBundle::loadBundleWithPath);
-
 			loadBundleProperties();
 			NSNotificationCenter.defaultCenter().postNotification(AllBundlesDidLoadNotification, null, null);
+
 			_NSUtilities._setResourceSearcher(new _NSUtilities._ResourceSearcher() {
 				@Override
 				public Class _searchForClassWithName(final String className) {
@@ -229,6 +220,7 @@ public class NSBundle {
 				.filter(adaptor -> adaptor.isAdaptable(bundleFs, bundlePath)).findFirst()
 				.map(adaptor -> new NSBundle(bundleFs, bundlePath, adaptor)).orElse(null);
 		if (bundle != null) {
+			final AtomicBoolean flag = new AtomicBoolean(false);
 			BUNDLES_BY_NAME.compute(bundle.name(), (key, value) -> {
 				if (value == null) {
 					NSLog.out.appendln("Bundle loaded with name " + bundle.name() + " and adaptor "
@@ -240,9 +232,8 @@ public class NSBundle {
 						mainBundle = bundle;
 					}
 					BUNDLES_BY_PATH.put(bundle.bundlePath(), bundle);
-					// load principal class and post notification
-					bundle.principalClass();
-					bundle.postNotification();
+					// set post notification flag
+					flag.set(true);
 					return bundle;
 				}
 				if (NSLog._debugLoggingAllowedForLevelAndGroups(NSLog.DebugLevelDetailed,
@@ -251,6 +242,17 @@ public class NSBundle {
 				}
 				return value;
 			});
+			/*
+			 * Moved postNotification outside of the compute(), because it ends up creating
+			 * a recursive call back into compute which results in an IllegalStateException.
+			 */
+			if(flag.get()) {
+				// Initialize bundleClassNames to register BUNDLES_BY_CLASS
+				bundle.bundleClassNames();
+				// load principal class
+				bundle.principalClass();
+				bundle.postNotification();
+			}
 		}
 		return bundle;
 	}
